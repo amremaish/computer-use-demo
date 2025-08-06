@@ -7,6 +7,10 @@ from .agentic_loop import APIProvider, sampling_loop
 from ..core.config import settings
 
 class WebSocketAgentHandler:
+
+    MODEL = "claude-sonnet-4-20250514"
+    TOOL_VERSION = "computer_use_20250124"
+
     def __init__(self, websocket: WebSocket, session_id: str, db_service, api_provider: APIProvider, sampling_loop, messages_for_api: List[BetaMessageParam]):
         self.websocket = websocket
         self.session_id = session_id
@@ -105,7 +109,7 @@ class WebSocketAgentHandler:
                             continue
                             
                         await self.sampling_loop(
-                            model="claude-sonnet-4-20250514",
+                            model=self.MODEL,
                             provider=self.api_provider,
                             system_prompt_suffix="",
                             messages=self.messages_for_api,
@@ -115,7 +119,7 @@ class WebSocketAgentHandler:
                             api_key=settings.ANTHROPIC_API_KEY,
                             only_n_most_recent_images=None,
                             max_tokens=4096,
-                            tool_version="computer_use_20250124",
+                            tool_version=self.TOOL_VERSION,
                             thinking_budget=None,
                             token_efficient_tools_beta=False
                         )
