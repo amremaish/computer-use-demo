@@ -1,0 +1,9 @@
+
+# API Configuration
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# PostgreSQL Configuration
+POSTGRES_DB=chat_sessions
+POSTGRES_USER=computeruse
+POSTGRES_PASSWORD=computeruse123
+POSTGRES_PORT=5432
