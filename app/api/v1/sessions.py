@@ -51,7 +51,7 @@ class SessionResponse(BaseModel):
             }
         }
 
-class SessionStatus(BaseModel):
+class Session(BaseModel):
     """Response model for session status."""
     session_id: str = Field(..., description="Unique session identifier")
     display_name: str = Field(..., description="Display name of the session")
@@ -158,8 +158,8 @@ def generateSessionName(prompt_text):
     name = first_line[:20] + '...' if len(first_line) > 20 else first_line
     return name or "New Session"
 
-@router.get("/session/{session_id}", response_model=SessionStatus)
-async def get_session_status(
+@router.get("/session/{session_id}", response_model=Session)
+async def get_session(
     session_id: str, 
     db: Session = Depends(get_db)
 ):
@@ -176,7 +176,7 @@ async def get_session_status(
     db_service = DatabaseService(db)
     session_data = db_service.get_session_for_api(session_id)
     if session_data:
-        return SessionStatus(**session_data)
+        return Session(**session_data)
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Session {session_id} not found"
