@@ -217,66 +217,73 @@
       const img = document.createElement("img");
       img.src = "data:image/png;base64," + base64;
       img.className = "img-fluid";
+      img.onload = () => {};
+      img.onerror = (e) => {};
       div.appendChild(img);
       messagesDiv.appendChild(div);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
+
+
 
     function clearMessages() {
       messagesDiv.innerHTML = '';
     }
 
          async function loadSessionHistory(sessionId) {
-       try {
-         const response = await fetch(`/api/session/${sessionId}/history`);
-         if (response.ok) {
-           const data = await response.json();
-           clearMessages();
-           
-           // Display messages (tool results are now embedded in assistant messages)
-                       if (data.messages && data.messages.length > 0) {
-              data.messages.forEach(msg => {
-                               if (msg.role === "user") {
-                  // Check if this is a regular user message or a tool_result message
-                  if (msg.content && msg.content.length > 0) {
-                    const firstContent = msg.content[0];
-                    if (firstContent && firstContent.type === "tool_result") {
-                      // This is a tool_result message, handle it
-                      firstContent.content.forEach(content => {
-                        if (content.type === "text" && content.text) {
-                          addMessage("Tool output", content.text);
-                        } else if (content.type === "image" && content.source && content.source.data) {
-                          addImage(content.source.data);
-                        }
-                      });
-                    } else if (firstContent && firstContent.text) {
-                      // This is a regular user message
-                      addMessage("You", firstContent.text);
+            fetch(`/api/session/${sessionId}/history`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.messages && Array.isArray(data.messages)) {
+                        data.messages.forEach(message => {
+                            if (message.role === 'user') {
+                                // Handle user messages
+                                if (message.content && Array.isArray(message.content)) {
+                                    message.content.forEach(block => {
+                                        if (block.type === 'text' && block.text) {
+                                            addMessage('user', block.text);
+                                        } else if (block.type === 'image' && block.source) {
+                                            addImage(block.source.data);
+                                        }
+                                    });
+                                }
+                            } else if (message.role === 'assistant') {
+                                // Handle assistant messages
+                                if (message.content && Array.isArray(message.content)) {
+                                    // Create a single container for all content blocks in this message
+                                    const messageContainer = document.createElement('div');
+                                    messageContainer.className = 'message assistant-message';
+                                    
+                                    message.content.forEach(block => {
+                                        if (block.type === 'text' && block.text) {
+                                            const textDiv = document.createElement('div');
+                                            textDiv.className = 'message-text';
+                                            textDiv.textContent = block.text;
+                                            messageContainer.appendChild(textDiv);
+                                        } else if (block.type === 'image') {
+                                            const img = document.createElement('img');
+                                            img.className = 'message-image';
+                                            if (block.source && block.source.data) {
+                                                img.src = `data:image/png;base64,${block.source.data}`;
+                                            } else if (block.data) {
+                                                img.src = `data:image/png;base64,${block.data}`;
+                                            }
+                                            messageContainer.appendChild(img);
+                                        }
+                                    });
+                                    
+                                    if (messageContainer.children.length > 0) {
+                                        messagesDiv.appendChild(messageContainer);
+                                    }
+                                }
+                            }
+                        });
                     }
-                  }
-                } else if (msg.role === "assistant") {
-                 // Display assistant messages including tool results
-                                   msg.content.forEach(block => {
-                    if (block.type === "text" && block.text) {
-                     addMessage("Claude", block.text);
-                   } else if (block.type === "image" && block.source && block.source.data) {
-                     addImage(block.source.data);
-                   }
-                 });
-               }
-             });
-           }
-           
-           if (data.messages && data.messages.length > 0) {
-             addMessage("System", `Loaded ${data.messages.length} messages from session history`);
-           } else {
-             addMessage("System", "No previous messages in this session");
-           }
-         }
-       } catch (error) {
-         addMessage("Error", "Failed to load session history: " + error.message);
-       }
-     }
+                })
+                .catch(error => {
+                    console.error('Failed to load session history:', error);
+                });
+        }
 
     async function listSessions() {
       try {
@@ -310,7 +317,9 @@
               deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
               deleteBtn.onclick = (e) => {
                 e.stopPropagation();
-                deleteSessionById(session.session_id);
+                if (confirm(`Are you sure you want to delete session "${session.display_name}"? This action cannot be undone.`)) {
+                  deleteSessionById(session.session_id);
+                }
               };
               
               sessionDiv.appendChild(sessionInfo);
@@ -320,6 +329,7 @@
                 // Load this session
                 currentSessionId = session.session_id;
                 currentSessionSpan.textContent = `Active: ${session.session_id}`;
+                clearMessages(); // Clear messages before loading new session
                 loadSessionHistory(session.session_id);
                 connectWebSocket();
                 
@@ -364,7 +374,9 @@
         addMessage("Error", "No active session to delete");
         return;
       }
-      await deleteSessionById(currentSessionId);
+      if (confirm("Are you sure you want to delete the current session? This action cannot be undone.")) {
+        await deleteSessionById(currentSessionId);
+      }
     }
 
     async function deleteSessionById(sessionId) {
@@ -389,7 +401,8 @@
           // Refresh the session list
           await listSessions();
         } else {
-          addMessage("Error", "Failed to delete session");
+          const errorData = await response.json().catch(() => ({}));
+          addMessage("Error", `Failed to delete session: ${errorData.detail || response.statusText}`);
         }
       } catch (error) {
         addMessage("Error", "Failed to delete session: " + error.message);
@@ -409,52 +422,39 @@
         addMessage("System", "Connected to session");
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         addMessage("System", "Disconnected from session");
       };
 
       ws.onerror = (error) => {
-        addMessage("Error", "WebSocket error: " + error.message);
-      };
-    }
-
-         function handleWebSocketMessage(event) {
-       const data = JSON.parse(event.data);
-       switch (data.type) {
-         case "agent_message":
-           addMessage("Claude", data.message);
-           // Refresh session list to update message count
-           setTimeout(() => listSessions(), 100);
-           break;
-         case "thinking":
-           addMessage("Claude (thinking)", data.message);
-           break;
-         case "image":
-           if (data.data) addImage(data.data);
-           break;
-         case "tool_use":
-           // Don't display tool use messages to avoid "undefined" output
-           break;
-         case "error":
-           addMessage("Error", data.message);
-           break;
-       }
-     }
-
-    function setupWebSocketHandlers() {
-      ws.onopen = () => {
-        addMessage("System", "Connected to session");
-      };
-
-      ws.onclose = () => {
-        addMessage("System", "Disconnected from session");
-      };
-
-      ws.onerror = (error) => {
-        addMessage("Error", "WebSocket error: " + error.message);
+        const errorMessage = error.message || "Connection failed";
+        addMessage("Error", "WebSocket error: " + errorMessage);
       };
 
       ws.onmessage = handleWebSocketMessage;
+    }
+
+    function handleWebSocketMessage(event) {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case "agent_message":
+          addMessage("Claude", data.message);
+          // Refresh session list to update message count
+          setTimeout(() => listSessions(), 100);
+          break;
+        case "thinking":
+          addMessage("Claude (thinking)", data.message);
+          break;
+        case "image":
+          if (data.data) addImage(data.data);
+          break;
+        case "tool_use":
+          // Don't display tool use messages to avoid "undefined" output
+          break;
+        case "error":
+          addMessage("Error", data.message);
+          break;
+      }
     }
 
     // Event listeners
@@ -498,7 +498,7 @@
                // Wait a bit for WebSocket to connect, then send message
                setTimeout(() => {
                  if (ws && ws.readyState === WebSocket.OPEN) {
-                   ws.send(msg);
+                   ws.send(JSON.stringify({ message: msg }));
                  }
                }, 500);
                
@@ -517,7 +517,7 @@
              return;
            }
            addMessage("You", msg);
-           ws.send(msg);
+           ws.send(JSON.stringify({ message: msg }));
            // Refresh session list to update message count
            setTimeout(() => listSessions(), 100);
          }

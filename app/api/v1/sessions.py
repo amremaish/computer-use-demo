@@ -141,7 +141,7 @@ async def create_session(
     display_name = request.display_name or generateSessionName(request.initial_prompt)
     
     # Create session in database
-    session = db_service.create_session(
+    db_service.create_session(
         session_id=session_id,
         display_name=display_name,
         initial_prompt=request.initial_prompt

@@ -85,9 +85,9 @@ class DatabaseService:
         
         return {
             "session_id": session.session_id,
-            "display_name": session.display_name,
+            "display_name": session.display_name or "New Session",
             "status": session.status,
-            "created_at": session.created_at.isoformat(),
+            "created_at": session.created_at,
             "initial_prompt": session.initial_prompt,
             "message_count": self.get_message_count(session_id)
         }
@@ -98,10 +98,10 @@ class DatabaseService:
         return [
             {
                 "session_id": session.session_id,
-                "display_name": session.display_name,
+                "display_name": session.display_name or "New Session",
                 "status": session.status,
                 "message_count": self.get_message_count(session.session_id),
-                "created_at": session.created_at.isoformat()
+                "created_at": session.created_at
             }
             for session in sessions
         ]
@@ -117,12 +117,17 @@ class DatabaseService:
         
         for msg in messages:
             message_list.append({
+                "id": msg.id,
                 "role": msg.role,
-                "content": msg.content
+                "content": msg.content,
+                "created_at": msg.created_at
             })
         
         return {
             "session_id": session_id,
-            "messages": message_list,
-            "message_count": len(message_list)
+            "display_name": session.display_name or "New Session",
+            "status": session.status,
+            "created_at": session.created_at,
+            "initial_prompt": session.initial_prompt,
+            "messages": message_list
         } 
