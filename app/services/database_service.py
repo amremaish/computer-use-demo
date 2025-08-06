@@ -53,6 +53,12 @@ class DatabaseService:
     # Message operations
     def add_message(self, session_id: str, role: str, content: List[Dict[str, Any]]) -> MessageModel:
         """Add a message to a session"""
+        # Ensure content is always a list
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+        elif not isinstance(content, list):
+            content = [{"type": "text", "text": str(content)}]
+        
         message = MessageModel(
             session_id=session_id,
             role=role,
@@ -116,10 +122,19 @@ class DatabaseService:
         message_list = []
         
         for msg in messages:
+            # Handle case where content might be a string instead of a list
+            content = msg.content
+            if isinstance(content, str):
+                # Convert string content to proper format
+                content = [{"type": "text", "text": content}]
+            elif not isinstance(content, list):
+                # Fallback for any other unexpected type
+                content = [{"type": "text", "text": str(content)}]
+            
             message_list.append({
                 "id": msg.id,
                 "role": msg.role,
-                "content": msg.content,
+                "content": content,
                 "created_at": msg.created_at
             })
         
