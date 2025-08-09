@@ -1,6 +1,6 @@
 # Computer Use App
 
-A powerful AI agent that can interact with your computer through a web interface, capable of taking screenshots, running commands, editing files, and more. Built with FastAPI, Streamlit, and Anthropic's Claude API.
+A powerful AI agent that can interact with your computer through a web interface, capable of taking screenshots, running commands, editing files, and more. Built with FastAPI and Anthropic's Claude API.
 
 ## 🚀 Features
 
@@ -57,51 +57,11 @@ docker-compose up --build
 Once the containers are running, you can access:
 
 - **Main Application**: http://localhost:8080
-- **Streamlit Interface**: http://localhost:8501
 - **VNC Desktop**: http://localhost:6080 (noVNC)
-- **FastAPI Documentation**: http://localhost:8081/docs
+- **FastAPI App**: http://localhost:8081/
 - **API Base URL**: http://localhost:8081
 
-## 📖 Interactive API Documentation (Swagger)
-
-The Computer Use App includes comprehensive **Swagger/OpenAPI documentation** that allows you to:
-
-### 🔍 **Explore APIs Interactively**
-- **Swagger UI**: http://localhost:8081/docs
-- **ReDoc**: http://localhost:8081/redoc
-- **OpenAPI JSON**: http://localhost:8081/openapi.json
-
-### ✨ **Swagger Features**
-
-- **🚀 Try It Out**: Execute API calls directly from the browser
-- **📋 Pre-filled Examples**: Ready-to-use request examples
-- **🔧 Model Schemas**: Complete data models with validation
-- **📝 Detailed Descriptions**: Step-by-step usage instructions
-- **🎯 Organized Endpoints**: Grouped by functionality (sessions, websocket)
-- **⚡ Real-time Testing**: No need for external tools like Postman
-
-### 🎯 **What You Can Do with Swagger**
-
-1. **Create Sessions**: Test session creation with different parameters
-2. **View Session History**: Retrieve conversation history with images
-3. **List All Sessions**: Get an overview of all available sessions
-4. **Delete Sessions**: Remove sessions and their data
-5. **WebSocket Documentation**: Understand real-time communication patterns
-
-### 📱 **Example: Testing Session Creation**
-
-1. Go to http://localhost:8081/docs
-2. Find the **POST /api/session** endpoint
-3. Click **"Try it out"**
-4. Modify the request body:
-```json
-{
-  "display_name": "Test Session",
-  "initial_prompt": "Hello, can you help me organize my files?"
-}
-```
-5. Click **"Execute"**
-6. See the response with session ID and display name
+Note: Swagger/OpenAPI UI is disabled in this build.
 
 ## 🏗️ Project Structure
 
@@ -121,7 +81,6 @@ computer-use-demo/
 │   │   └── database_service.py   # Database operations
 │   ├── tools/                    # Agent tools
 │   │   ├── agentic_loop.py       # Main agent logic
-│   │   └── streamlit.py          # Streamlit interface
 │   └── main.py                   # FastAPI application
 ├── agent_dashboard/              # Desktop environment setup
 ├── docker-compose.yml            # Docker services configuration

@@ -20,7 +20,6 @@ services:
       - .env
     ports:
       - "5900:5900"   # VNC
-      - "8501:8501"   # Streamlit
       - "6080:6080"   # noVNC
       - "8080:8080"   # HTTP
       - "8081:8081"   # FastAPI
