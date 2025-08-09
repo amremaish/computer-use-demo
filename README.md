@@ -97,6 +97,29 @@ Once the containers are running, you can access:
 - **VNC Desktop**: http://localhost:6080 (noVNC)
 - **FastAPI App**: http://localhost:8081/
 
+## 🧪 Tests
+
+Run via Docker (single command):
+
+```bash
+docker compose build --pull computer-use-demo && \
+docker compose run --rm --no-deps --entrypoint python computer-use-demo -m pytest -q
+```
+
+Examples:
+
+```bash
+# Specific file
+docker compose run --rm --no-deps --entrypoint python computer-use-demo -m pytest -q tests/test_sessions_api.py
+
+# By pattern
+docker compose run --rm --no-deps --entrypoint python computer-use-demo -m pytest -q -k search_sessions
+```
+
+Notes:
+- Tests use an in-memory SQLite database via FastAPI dependency override, so they do not touch your real Postgres.
+- In CI, tests are executed inside Docker with an in-memory SQLite `DATABASE_URL`.
+
 ## 🏗️ Project Structure
 
 ```
