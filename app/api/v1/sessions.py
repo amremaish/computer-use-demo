@@ -198,7 +198,7 @@ class SessionSearchResponse(BaseModel):
 @router.get("/sessions/search", response_model=SessionSearchResponse)
 async def search_sessions(
     q: Optional[str] = Query(None, min_length=1, description="Text to search for in messages"),
-    limit: int = Query(20, ge=1, le=100, description="Max results to return"),
+    limit: int = Query(10, ge=1, le=100, description="Max results to return"),
     db: Session = Depends(get_db)
 ):
     """

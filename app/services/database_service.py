@@ -190,11 +190,25 @@ class DatabaseService:
             .filter(MessageModel.message_type == MessageType.TEXT)
         )
 
-        # Escape user input for regex
-        safe = re.escape(query_text)
-        pattern = f".*{safe}.*"
-        jsonpath = f'$.** ? (@.type == "text" && @.text like_regex "{pattern}" flag "i")'
-        q = q.filter(func.jsonb_path_exists(cast(MessageModel.content, JSONB), jsonpath))
+        # Choose implementation depending on DB dialect
+        dialect_name = None
+        try:
+            bind = self.db.get_bind()
+            if bind is not None and hasattr(bind, "dialect"):
+                dialect_name = bind.dialect.name
+        except Exception:
+            dialect_name = None
+
+        if dialect_name == "postgresql":
+            # PostgreSQL: use JSONB path exists with case-insensitive regex
+            safe = re.escape(query_text)
+            pattern = f".*{safe}.*"
+            jsonpath = f'$.** ? (@.type == "text" && @.text like_regex "{pattern}" flag "i")'
+            q = q.filter(func.jsonb_path_exists(cast(MessageModel.content, JSONB), jsonpath))
+        else:
+            # Fallback for SQLite/others: simple case-insensitive match on serialized content
+            safe = query_text
+            q = q.filter(cast(MessageModel.content, String).ilike(f"%{safe}%"))
 
         rows = q.order_by(desc(MessageModel.created_at)).limit(max_results).all()
 

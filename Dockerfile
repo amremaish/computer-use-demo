@@ -93,6 +93,7 @@ RUN python -m pip install -r $HOME/requirements.txt
 # setup desktop env & app
 COPY --chown=$USERNAME:$USERNAME agent_dashboard/ $HOME
 COPY --chown=$USERNAME:$USERNAME app/ $HOME/app/
+COPY --chown=$USERNAME:$USERNAME tests/ $HOME/tests/
 COPY --chown=$USERNAME:$USERNAME docker-compose.yml $HOME/
 COPY --chown=$USERNAME:$USERNAME entrypoint.sh $HOME/
 
