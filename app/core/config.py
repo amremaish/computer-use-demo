@@ -14,6 +14,10 @@ class Settings:
     
     @property
     def DATABASE_URL(self) -> str:
+        # Allow override via DATABASE_URL env (useful for tests/CI)
+        override = os.getenv("DATABASE_URL")
+        if override:
+            return override
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings() 

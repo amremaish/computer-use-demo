@@ -30,6 +30,8 @@ jobs:
         run: |
           docker compose version
           docker compose build --pull computer-use-demo
-          docker compose run --rm --no-deps --entrypoint python computer-use-demo -m pytest -q
+          # Run with an in-container SQLite URL to avoid Postgres dependency in CI
+          docker compose run --rm --no-deps -e DATABASE_URL=sqlite+pysqlite:///:memory: \
+            --entrypoint python computer-use-demo -m pytest -q
 
 
