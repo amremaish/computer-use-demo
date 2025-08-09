@@ -159,13 +159,30 @@
       cursor: row-resize !important;
       user-select: none !important;
     }
+
+    /* Vertical divider between sidebar and chat */
+    .sidebar-divider {
+      width: 1px;
+      background: #e9ecef;
+      border-left: 1px solid #dee2e6;
+      border-right: 1px solid #dee2e6;
+      cursor: col-resize;
+      height: 100vh;
+      z-index: 5;
+      padding: 0;
+    }
+    .sidebar-divider:hover { background: #dee2e6; }
+    .resizing-x * {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
   </style>
 </head>
   <body>
     <div class="container-fluid main-container">
       <div class="row h-100">
         <!-- Left Sidebar -->
-        <div class="col-md-4 col-lg-3 sidebar p-0">
+        <div id="leftPane" class="col-md-3 col-lg-2 sidebar p-0">
           <div class="p-3 border-bottom">
             <h5 class="mb-3">
               <i class="bi bi-chat-dots me-2"></i>
@@ -195,8 +212,11 @@
           </div>
         </div>
         
+        <!-- Vertical divider between left and right -->
+        <div id="sidebarDivider" class="sidebar-divider" title="Drag to resize"></div>
+
         <!-- Main Chat Area -->
-        <div class="col-md-8 col-lg-9 chat-container p-0">
+        <div id="rightPane" class="col-md-8 col-lg-9 chat-container p-0">
           <div id="vncSection" class="vnc-container">
             <iframe id="vncIframe" src="" allow="fullscreen"></iframe>
           </div>
@@ -257,6 +277,9 @@
      const openVncNewTab = document.getElementById('openVncNewTab');
      const vncDivider = document.getElementById('vncDivider');
      const hideVncBtn = document.getElementById('hideVncBtn');
+     const sidebarDivider = document.getElementById('sidebarDivider');
+     const leftPane = document.getElementById('leftPane');
+     const rightPane = document.getElementById('rightPane');
 
      // Search modal elements
      let sessionsSearchModal = null;
@@ -620,7 +643,8 @@
 
      // Search handler via event delegation (works even if button is created later)
      document.addEventListener('click', (e) => {
-       if (e.target && e.target.id === 'runSearchBtn') {
+       const btn = e.target && e.target.closest && e.target.closest('#runSearchBtn');
+       if (btn) {
          runSessionSearch();
        }
      });
@@ -793,6 +817,62 @@
         document.addEventListener('mouseup', onUp);
       });
     })();
+
+    // Horizontal drag-to-resize between left and right panes
+    (function enableSidebarResize(){
+      if (!sidebarDivider || !leftPane || !rightPane) return;
+
+      let isDragging = false;
+      let startX = 0;
+      let startLeftWidthPx = 0;
+      let containerWidthPx = 0;
+
+      function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+      function onMove(e){
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const newLeftWidth = clamp(startLeftWidthPx + dx, 180, Math.max(180, containerWidthPx - 300));
+        leftPane.style.flex = '0 0 auto';
+        leftPane.style.width = newLeftWidth + 'px';
+        // Right pane will naturally occupy remaining space in Bootstrap grid layout
+      }
+
+      function onUp(){
+        if (!isDragging) return;
+        isDragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('resizing-x');
+        try{
+          const px = leftPane.getBoundingClientRect().width;
+          localStorage.setItem('sidebarWidthPx', String(Math.round(px)));
+        } catch {}
+      }
+
+      sidebarDivider.addEventListener('mousedown', (e)=>{
+        e.preventDefault();
+        isDragging = true;
+        startX = e.clientX;
+        startLeftWidthPx = leftPane.getBoundingClientRect().width;
+        containerWidthPx = document.querySelector('.main-container').getBoundingClientRect().width;
+        document.body.classList.add('resizing-x');
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      // Restore saved width
+      try{
+        const saved = localStorage.getItem('sidebarWidthPx');
+        if (saved){
+          const px = parseInt(saved, 10);
+          if (!Number.isNaN(px) && px >= 180){
+            leftPane.style.flex = '0 0 auto';
+            leftPane.style.width = px + 'px';
+          }
+        }
+      } catch {}
+    })();
   </script>
   
   <!-- Sessions Search Modal -->
@@ -808,7 +888,7 @@
             <div class="col-sm-8">
               <input type="text" id="searchQueryInput" class="form-control" placeholder="Search text in messages...">
             </div>
-            <div class="col-sm-4 d-grid">
+            <div class="col-sm-2 d-grid">
               <button class="btn btn-primary" id="runSearchBtn" type="button"><i class="bi bi-search"></i></button>
             </div>
           </div>

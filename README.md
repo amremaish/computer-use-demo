@@ -1,6 +1,18 @@
+<div align="right" style="margin-top: 1rem;">
+  <b>Author:</b>
+  <a href="mailto:amr.emaish@gmail.com"> Amr Emaish </a>
+</div>
+
 # Computer Use App
 
 A powerful AI agent that can interact with your computer through a web interface, capable of taking screenshots, running commands, editing files, and more. Built with FastAPI and Anthropic's Claude API.
+
+## 👤 Author
+
+- **Name**: Amr Emaish
+- **Email**: amr.emaish@gmail.com
+- **Experience**: Around 5+ years in backend engineering
+- **LinkedIn**: [linkedin.com/in/amr-emaish](https://linkedin.com/in/amr-emaish)
 
 ## 🚀 Features
 
@@ -10,7 +22,22 @@ A powerful AI agent that can interact with your computer through a web interface
 - **WebSocket Communication**: Real-time updates and streaming responses
 - **Session Management**: Persistent conversation history with database storage
 - **VNC Integration**: Remote desktop access through noVNC
-- **Interactive API Documentation**: Full Swagger/OpenAPI documentation with live testing
+ 
+
+## 🎬 Demo
+
+- Demo Video: [Watch here](https://drive.google.com/file/d/1bp0yZdsZqY1GNJgmC7FD-nSmJqHjdO9f/view)
+
+Prompts used in the demo:
+
+```text
+Prompt 1:
+Open the Office and create two columns: "First Name" and "Last Name". Then, add one row of data.
+
+Prompt 2:
+Open the calculator and calculate: 8 × 3.
+```
+- **Session Content Search**: Search past sessions by text content with a built-in UI modal and REST API
 
 ## 📋 Prerequisites
 
@@ -59,9 +86,6 @@ Once the containers are running, you can access:
 - **Main Application**: http://localhost:8080
 - **VNC Desktop**: http://localhost:6080 (noVNC)
 - **FastAPI App**: http://localhost:8081/
-- **API Base URL**: http://localhost:8081
-
-Note: Swagger/OpenAPI UI is disabled in this build.
 
 ## 🏗️ Project Structure
 
@@ -95,7 +119,29 @@ The following diagram shows the end-to-end flow between the browser UI, FastAPI 
 
 ![Sequence Diagram](docs/sequance_diagrams.png)
 
+## Entity Relationship Diagram (ERD)
+
+The following diagram shows the database schema and relationships between sessions and messages.
+
+![ERD](docs/erd.png)
+
 ## 📚 API Documentation
+
+## 🔎 Using the Search UI
+
+- Open the app at `http://localhost:8080`.
+- Click the "Search Sessions" button in the sidebar.
+- Type your query and press Enter or click the search icon.
+- Click a result to open that session; the modal will close automatically.
+
+Notes:
+- Search operates on text blocks only (images are not searched).
+- Results show at most one recent match per session.
+
+## 🗃️ Database Notes
+
+- Messages have a `message_type` enum (`text` or `image`).
+- A lightweight migration runs on startup to ensure the enum type and `messages.message_type` column exist (PostgreSQL required). Existing rows are best-effort backfilled by detecting image blocks.
 
 ### Base URL
 ```
@@ -242,6 +288,39 @@ Deletes a session and all its associated messages.
 **Example:**
 ```bash
 curl -X DELETE "http://localhost:8081/api/session/4dccdad3-d809-473b-9bcf-1c7dfc095850"
+```
+
+#### 6. Search Sessions by Text
+**GET** `/api/sessions/search`
+
+Search across message content (text blocks only) and return the most recent matching message per session.
+
+Query Params:
+
+- `q` (string, required): Text to search (case-insensitive substring)
+- `limit` (int, optional, default 10, max 100): Max unique sessions to return
+
+Response:
+
+```json
+{
+  "results": [
+    {
+      "session_id": "string",
+      "display_name": "string or null",
+      "created_at": "datetime",
+      "message_id": 123,
+      "message_created_at": "datetime",
+      "snippet": "Up to first 200 chars of matched text"
+    }
+  ]
+}
+```
+
+Example:
+
+```bash
+curl "http://localhost:8081/api/sessions/search?q=install%20python&limit=10"
 ```
 
 ### WebSocket API
