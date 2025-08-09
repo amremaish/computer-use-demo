@@ -13,6 +13,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare .env for Compose
+        run: |
+          if [ -f env_template.txt ]; then
+            cp env_template.txt .env
+          else
+            cat > .env << 'EOF'
+            POSTGRES_DB=chat_sessions
+            POSTGRES_USER=computeruse
+            POSTGRES_PASSWORD=computeruse123
+            POSTGRES_PORT=5432
+            ANTHROPIC_API_KEY=dummy
+            EOF
+          fi
+
       - name: Build image and run tests with Docker
         run: |
           docker compose version
