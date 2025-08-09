@@ -1,6 +1,6 @@
 #-------------------------------------
 # Panel
-panel_items = TL
+panel_items = LT
 panel_size = 100% 60
 panel_margin = 0 0
 panel_padding = 2 0 2
@@ -28,7 +28,7 @@ scale_relative_to_screen_height = 0
 #-------------------------------------
 # Taskbar
 taskbar_mode = single_desktop
-taskbar_hide_if_empty = 0
+taskbar_hide_if_empty = 1
 taskbar_padding = 0 0 2
 taskbar_background_id = 0
 taskbar_active_background_id = 0
@@ -51,7 +51,7 @@ task_align = left
 launcher_padding = 4 8 4
 launcher_background_id = 0
 launcher_icon_background_id = 0
-launcher_icon_size = 48
+launcher_icon_size = 36
 launcher_icon_asb = 100 0 0
 launcher_icon_theme_override = 0
 startup_notifications = 1
@@ -59,12 +59,15 @@ launcher_tooltip = 1
 
 #-------------------------------------
 # Launcher icon
-launcher_item_app = /usr/share/applications/libreoffice-calc.desktop
+# Ensure Terminal and Firefox are first, include multiple fallbacks
+launcher_item_app = /usr/share/applications/xterm.desktop
 launcher_item_app = /home/computeruse/.config/tint2/applications/terminal.desktop
+launcher_item_app = /usr/share/applications/firefox-esr.desktop
+launcher_item_app = /usr/share/applications/firefox.desktop
 launcher_item_app = /home/computeruse/.config/tint2/applications/firefox-custom.desktop
+launcher_item_app = /usr/share/applications/libreoffice-calc.desktop
 launcher_item_app = /usr/share/applications/xpaint.desktop
 launcher_item_app = /usr/share/applications/xpdf.desktop
-launcher_item_app = /home/computeruse/.config/tint2/applications/gedit.desktop
 launcher_item_app = /usr/share/applications/galculator.desktop
 
 #-------------------------------------

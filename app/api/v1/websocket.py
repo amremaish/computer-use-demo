@@ -48,26 +48,24 @@ class ErrorMessage(BaseModel):
 
 @router.websocket("/ws/session/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session = Depends(get_db)):
- """
- WebSocket endpoint for real-time communication with the AI agent.
- """
+    """WebSocket endpoint for handling AI agent interactions."""
     try:
         print(f"[WebSocket] Accepting connection for session: {session_id}")
         await websocket.accept()
         print(f"[WebSocket] Connection accepted for session: {session_id}")
-        
+
         # Create db_service instance
         db_service = DatabaseService(db)
-        
+
         # Verify session exists
         session = db_service.get_session(session_id)
         if not session:
             print(f"[WebSocket] Session not found: {session_id}")
             await websocket.close(code=4004, reason="Session not found")
             return
-        
+
         print(f"[WebSocket] Session found: {session_id}, status: {session.status}")
-        
+
         # Instantiate and run the handler
         handler = WebSocketAgentHandler(
             websocket=websocket,
@@ -79,7 +77,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session 
         )
 
         await handler.handle()
-        
+
     except WebSocketDisconnect:
         print(f"[WebSocket] Client disconnected: {session_id}")
     except Exception as e:

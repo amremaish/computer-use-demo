@@ -119,6 +119,46 @@
       min-height: 120px;
       resize: vertical;
     }
+
+    /* VNC viewer container */
+    .vnc-container {
+      height: 40vh;
+      border-bottom: 1px solid #dee2e6;
+      background: #000;
+    }
+    .vnc-container iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
+    /* Draggable divider between VNC and chat */
+    .vnc-divider {
+      height: 10px;
+      background: #e9ecef;
+      border-top: 1px solid #dee2e6;
+      border-bottom: 1px solid #dee2e6;
+      cursor: row-resize;
+      position: relative;
+      z-index: 5;
+    }
+    .vnc-divider::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 3px;
+      background: #c7cbd1;
+      border-radius: 2px;
+    }
+    .vnc-divider:hover { background: #dee2e6; }
+    .resizing * {
+      cursor: row-resize !important;
+      user-select: none !important;
+    }
   </style>
 </head>
   <body>
@@ -153,11 +193,25 @@
         
         <!-- Main Chat Area -->
         <div class="col-md-8 col-lg-9 chat-container p-0">
+          <div id="vncSection" class="vnc-container">
+            <iframe id="vncIframe" src="" allow="fullscreen"></iframe>
+          </div>
+          <div id="vncDivider" class="vnc-divider" title="Drag to resize"></div>
           <div class="chat-header p-3">
-            <h4 class="mb-0">
-              <i class="bi bi-robot me-2"></i>
-              Claude Agent Chat
-            </h4>
+            <div class="d-flex align-items-center justify-content-between">
+              <h4 class="mb-0">
+                <i class="bi bi-robot me-2"></i>
+                Claude Agent Chat
+              </h4>
+              <div class="btn-group">
+                <button id="toggleControlBtn" class="btn btn-outline-secondary btn-sm" title="Toggle control" disabled>
+                  Control: Off
+                </button>
+                <a id="openVncNewTab" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener" title="Open screen in new tab">
+                  <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+              </div>
+            </div>
           </div>
           <div id="messages" class="messages-container">
             <!-- Messages will appear here -->
@@ -190,6 +244,28 @@
      const refreshSessionsBtn = document.getElementById("refreshSessionsBtn");
      const currentSessionSpan = document.getElementById("currentSession");
      const sessionsList = document.getElementById("sessionsList");
+     const vncSection = document.getElementById('vncSection');
+     const vncIframe = document.getElementById('vncIframe');
+     const toggleControlBtn = document.getElementById('toggleControlBtn');
+     const openVncNewTab = document.getElementById('openVncNewTab');
+     const vncDivider = document.getElementById('vncDivider');
+
+     let vncViewOnly = true;
+     function buildVncUrl() {
+       const host = window.location.hostname;
+       return `http://${host}:6080/vnc.html?resize=scale&autoconnect=1&view_only=${vncViewOnly ? 1 : 0}&reconnect=1&reconnect_delay=2000`;
+     }
+
+     // Initialize open-in-new-tab link
+     openVncNewTab.href = `http://${window.location.hostname}:6080/vnc.html?resize=scale&autoconnect=1&view_only=1&reconnect=1&reconnect_delay=2000`;
+
+     toggleControlBtn.onclick = () => {
+       vncViewOnly = !vncViewOnly;
+       toggleControlBtn.textContent = `Control: ${vncViewOnly ? 'Off' : 'On'}`;
+       if (vncIframe.src) {
+         vncIframe.src = buildVncUrl();
+       }
+     };
 
 
 
@@ -529,8 +605,81 @@
 
     // Load sessions when page loads
     window.addEventListener('load', async () => {
+      // Always show VNC and load immediately
+      // Restore saved height if present
+      try {
+        const saved = localStorage.getItem('vncHeightPx');
+        if (saved) {
+          const px = parseInt(saved, 10);
+          if (!Number.isNaN(px) && px > 120) {
+            vncSection.style.height = px + 'px';
+          }
+        }
+      } catch {}
+
+      vncIframe.src = buildVncUrl();
+      toggleControlBtn.disabled = false;
       await listSessions();
     });
+
+    // Drag-to-resize logic
+    (function enableVncResize() {
+      let isDragging = false;
+      let startY = 0;
+      let startHeight = 0;
+      let lastClientY = 0;
+      let scheduled = false;
+
+      function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+      function applyResize() {
+        scheduled = false;
+        if (!isDragging) return;
+        const dy = lastClientY - startY;
+        const container = document.querySelector('.chat-container');
+        const containerHeight = container.getBoundingClientRect().height;
+        const minVnc = 120; // px
+        const minChat = 200; // px reserved for chat area
+        const maxVnc = containerHeight - minChat; // keep room for chat
+        const newHeight = clamp(startHeight + dy, minVnc, Math.max(minVnc, maxVnc));
+        vncSection.style.height = newHeight + 'px';
+      }
+
+      function onMove(e) {
+        if (!isDragging) return;
+        lastClientY = e.clientY;
+        if (!scheduled) {
+          scheduled = true;
+          requestAnimationFrame(applyResize);
+        }
+      }
+
+      function onUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('resizing');
+        // Re-enable iframe interaction
+        vncIframe.style.pointerEvents = 'auto';
+        try {
+          const px = vncSection.getBoundingClientRect().height;
+          localStorage.setItem('vncHeightPx', String(Math.round(px)));
+        } catch {}
+      }
+
+      vncDivider.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging = true;
+        startY = e.clientY;
+        startHeight = vncSection.getBoundingClientRect().height;
+        document.body.classList.add('resizing');
+        // Prevent iframe from swallowing mouse events during drag
+        vncIframe.style.pointerEvents = 'none';
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    })();
   </script>
   
   <!-- Bootstrap 5 JavaScript -->
