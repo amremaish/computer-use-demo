@@ -89,6 +89,12 @@ computer-use-demo/
 └── entrypoint.sh                 # Container startup script
 ```
 
+## Sequence Diagram
+
+The following diagram shows the end-to-end flow between the browser UI, FastAPI backend, the agent, database, and the VNC stack.
+
+![Sequence Diagram](docs/sequance_diagrams.png)
+
 ## 📚 API Documentation
 
 ### Base URL

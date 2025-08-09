@@ -204,6 +204,9 @@
                 Claude Agent Chat
               </h4>
               <div class="btn-group">
+                <button id="hideVncBtn" class="btn btn-outline-secondary btn-sm" title="Hide/Show screen">
+                  <i class="bi bi-display"></i> Hide Screen
+                </button>
                 <button id="toggleControlBtn" class="btn btn-outline-secondary btn-sm" title="Toggle control" disabled>
                   Control: Off
                 </button>
@@ -249,6 +252,7 @@
      const toggleControlBtn = document.getElementById('toggleControlBtn');
      const openVncNewTab = document.getElementById('openVncNewTab');
      const vncDivider = document.getElementById('vncDivider');
+     const hideVncBtn = document.getElementById('hideVncBtn');
 
      let vncViewOnly = true;
      function buildVncUrl() {
@@ -621,6 +625,31 @@
       toggleControlBtn.disabled = false;
       await listSessions();
     });
+
+    // Hide/Show VNC and divider
+    (function enableHideShowVnc(){
+      function setHidden(hidden){
+        if(hidden){
+          vncSection.style.display = 'none';
+          vncDivider.style.display = 'none';
+          hideVncBtn.innerHTML = '<i class="bi bi-display"></i> Show Screen';
+          localStorage.setItem('vncHidden','1');
+        } else {
+          vncSection.style.display = '';
+          vncDivider.style.display = '';
+          hideVncBtn.innerHTML = '<i class="bi bi-display"></i> Hide Screen';
+          localStorage.setItem('vncHidden','0');
+        }
+      }
+      try{
+        const hidden = localStorage.getItem('vncHidden') === '1';
+        setHidden(hidden);
+      } catch {}
+      hideVncBtn.onclick = () => {
+        const currentlyHidden = vncSection.style.display === 'none';
+        setHidden(!currentlyHidden);
+      };
+    })();
 
     // Drag-to-resize logic
     (function enableVncResize() {

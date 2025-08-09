@@ -1,13 +1,13 @@
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, String, DateTime, Text, Integer
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+from app.core.database import Base
 
-Base = declarative_base()
 
 class Session(Base):
     __tablename__ = "sessions"
-    session_id = Column(String(255), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String(255), unique=True, index=True, nullable=False)
     display_name = Column(String(255), nullable=True)
     status = Column(String(50), default="running")
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -1,15 +1,18 @@
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker, declarative_base
 from sqlalchemy import create_engine
-from fastapi import Depends
-
-from ..models import Base
 from .config import settings
 
 # Create engine
 engine = create_engine(settings.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create tables
+# Central SQLAlchemy declarative base used by all models
+Base = declarative_base()
+
+# Import models to register mappings with Base.metadata (after Base is defined)
+from app import models  # noqa: F401,E402
+
+# Create tables after models are imported
 Base.metadata.create_all(bind=engine)
 
 def get_db() -> Session:
