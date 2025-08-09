@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -24,10 +22,12 @@ services:
       - "8080:8080"   # HTTP
       - "8081:8081"   # FastAPI
     volumes:
-      - "${USERPROFILE}\\.anthropic:/home/computeruse/.anthropic"
+      # Use a named volume for Anthropic config to avoid host-specific paths in CI
+      - anthropic_data:/home/computeruse/.anthropic
     depends_on:
       - postgres
     restart: unless-stopped
 
 volumes:
   postgres_data: 
+  anthropic_data:
