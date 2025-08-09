@@ -26,9 +26,10 @@ A powerful AI agent that can interact with your computer through a web interface
 
 ## 🎬 Demo
 
-- Demo Video: [Watch here](https://drive.google.com/file/d/1bp0yZdsZqY1GNJgmC7FD-nSmJqHjdO9f/view)
+- Demo Video 1: [Watch here](https://drive.google.com/file/d/1bp0yZdsZqY1GNJgmC7FD-nSmJqHjdO9f/view)
+- Demo Video 2: [Watch here](https://drive.google.com/file/d/1nObB3WYgVQP6otH258eSpVkz-1FuWh52/view)
 
-Prompts used in the demo:
+Prompts used in Demo Video 1:
 
 ```text
 Prompt 1:
@@ -36,6 +37,15 @@ Open the Office and create two columns: "First Name" and "Last Name". Then, add 
 
 Prompt 2:
 Open the calculator and calculate: 8 × 3.
+```
+- Prompts used in Demo Video 2:
+
+```text
+Prompt 1:
+Search the weather in Dubai
+
+Prompt 2:
+Search the weather in San Francisco
 ```
 - **Session Content Search**: Search past sessions by text content with a built-in UI modal and REST API
 
