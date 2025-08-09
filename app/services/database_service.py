@@ -204,9 +204,6 @@ class DatabaseService:
             if session.session_code in seen_session_codes:
                 continue
             seen_session_codes.add(session.session_code)
-
-            # Build a text snippet from message content (without checking message_type)
-            snippet_text: Optional[str] = None
             content = message.content
             try:
                 if isinstance(content, list):
@@ -233,7 +230,5 @@ class DatabaseService:
                 "message_created_at": message.created_at,
                 "snippet": snippet_text,
             })
-            if len(results) >= max_results:
-                break
 
         return results
