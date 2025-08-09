@@ -48,96 +48,9 @@ class ErrorMessage(BaseModel):
 
 @router.websocket("/ws/session/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str, db: Session = Depends(get_db)):
-    """
-    WebSocket endpoint for real-time communication with the AI agent.
-    
-    This endpoint establishes a WebSocket connection for live communication with the AI agent.
-    It handles bidirectional communication where users can send messages and receive
-    real-time responses including text, images, and thinking processes.
-    
-    ## Connection
-    
-    Connect to: `ws://localhost:8081/ws/session/{session_id}`
-    
-    ## Message Types
-    
-    ### Sending Messages (Client → Server)
-    ```json
-    {
-        "message": "Take a screenshot of my desktop"
-    }
-    ```
-    
-    ### Receiving Messages (Server → Client)
-    
-    **Agent Text Response:**
-    ```json
-    {
-        "type": "agent_message",
-        "message": "I've taken a screenshot of your desktop. Here's what I can see..."
-    }
-    ```
-    
-    **Image Response:**
-    ```json
-    {
-        "type": "image",
-        "data": "base64-encoded-image-data"
-    }
-    ```
-    
-    **Thinking Process:**
-    ```json
-    {
-        "type": "thinking",
-        "message": "I need to take a screenshot to see the current desktop state..."
-    }
-    ```
-    
-    **Error Message:**
-    ```json
-    {
-        "type": "agent_message",
-        "message": "Error: Unable to take screenshot due to permission issues"
-    }
-    ```
-    
-    ## Features
-    
-    - **Real-time Communication**: Instant message exchange
-    - **Image Support**: Receive screenshots and visual content
-    - **Thinking Process**: See the agent's reasoning
-    - **Error Handling**: Graceful error reporting
-    - **Session Persistence**: Messages are saved to database
-    
-    ## Usage Example
-    
-    ```javascript
-    const ws = new WebSocket(`ws://localhost:8081/ws/session/${sessionId}`);
-    
-    ws.onopen = () => {
-        console.log('Connected to AI agent');
-        ws.send(JSON.stringify({
-            message: "Hello, can you help me organize my files?"
-        }));
-    };
-    
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        switch(data.type) {
-            case 'agent_message':
-                console.log('Agent:', data.message);
-                break;
-            case 'image':
-                console.log('Received image:', data.data);
-                break;
-            case 'thinking':
-                console.log('Agent thinking:', data.message);
-                break;
-        }
-    };
-    ```
-    """
+ """
+ WebSocket endpoint for real-time communication with the AI agent.
+ """
     try:
         print(f"[WebSocket] Accepting connection for session: {session_id}")
         await websocket.accept()
