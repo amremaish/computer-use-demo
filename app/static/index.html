@@ -177,6 +177,10 @@
                  <i class="bi bi-plus-circle me-1"></i>
                  New Chat
                </button>
+               <button id="searchSessionsBtn" class="btn btn-outline-primary btn-sm">
+                 <i class="bi bi-search me-1"></i>
+                 Search Sessions
+               </button>
               <button id="refreshSessionsBtn" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-clockwise me-1"></i>
                 Refresh Sessions
@@ -225,8 +229,7 @@
                   type="text" 
                   id="messageInput" 
                   class="form-control" 
-                  placeholder="Type your message..." 
-                  value=" open calculator and make 6+6"
+                  placeholder="Type your message..."
                 >
               <button id="sendBtn" class="btn btn-primary">
                 <i class="bi bi-send"></i>
@@ -245,6 +248,7 @@
      const sendBtn = document.getElementById("sendBtn");
      const createSessionBtn = document.getElementById("createSessionBtn");
      const refreshSessionsBtn = document.getElementById("refreshSessionsBtn");
+     const searchSessionsBtn = document.getElementById('searchSessionsBtn');
      const currentSessionSpan = document.getElementById("currentSession");
      const sessionsList = document.getElementById("sessionsList");
      const vncSection = document.getElementById('vncSection');
@@ -253,6 +257,21 @@
      const openVncNewTab = document.getElementById('openVncNewTab');
      const vncDivider = document.getElementById('vncDivider');
      const hideVncBtn = document.getElementById('hideVncBtn');
+
+     // Search modal elements
+     let sessionsSearchModal = null;
+     let bsModalInstance = null;
+     function ensureSearchModal() {
+       if (!sessionsSearchModal) {
+         sessionsSearchModal = document.getElementById('sessionsSearchModal');
+         // bootstrap Modal instance
+         // eslint-disable-next-line no-undef
+         bsModalInstance = new bootstrap.Modal(sessionsSearchModal);
+       }
+     }
+     const searchQueryInput = () => document.getElementById('searchQueryInput');
+     const searchResultsInfo = () => document.getElementById('searchResultsInfo');
+     const searchResultsList = () => document.getElementById('searchResultsList');
 
      let vncViewOnly = true;
      function buildVncUrl() {
@@ -316,46 +335,27 @@
                 .then(data => {
                     if (data && data.messages && Array.isArray(data.messages)) {
                         data.messages.forEach(message => {
+                            const blocks = Array.isArray(message.content) ? message.content : [];
                             if (message.role === 'user') {
-                                // Handle user messages
-                                if (message.content && Array.isArray(message.content)) {
-                                    message.content.forEach(block => {
-                                        if (block.type === 'text' && block.text) {
-                                            addMessage('user', block.text);
-                                        } else if (block.type === 'image' && block.source) {
-                                            addImage(block.source.data);
-                                        }
-                                    });
-                                }
-                            } else if (message.role === 'assistant') {
-                                // Handle assistant messages
-                                if (message.content && Array.isArray(message.content)) {
-                                    // Create a single container for all content blocks in this message
-                                    const messageContainer = document.createElement('div');
-                                    messageContainer.className = 'message assistant-message';
-                                    
-                                    message.content.forEach(block => {
-                                        if (block.type === 'text' && block.text) {
-                                            const textDiv = document.createElement('div');
-                                            textDiv.className = 'message-text';
-                                            textDiv.textContent = block.text;
-                                            messageContainer.appendChild(textDiv);
-                                        } else if (block.type === 'image') {
-                                            const img = document.createElement('img');
-                                            img.className = 'message-image';
-                                            if (block.source && block.source.data) {
-                                                img.src = `data:image/png;base64,${block.source.data}`;
-                                            } else if (block.data) {
-                                                img.src = `data:image/png;base64,${block.data}`;
-                                            }
-                                            messageContainer.appendChild(img);
-                                        }
-                                    });
-                                    
-                                    if (messageContainer.children.length > 0) {
-                                        messagesDiv.appendChild(messageContainer);
+                                blocks.forEach(block => {
+                                    if (block.type === 'text' && block.text) {
+                                        addMessage('You', block.text);
+                                    } else if (block.type === 'image' && block.source && block.source.data) {
+                                        addImage(block.source.data);
                                     }
-                                }
+                                });
+                            } else if (message.role === 'assistant') {
+                                blocks.forEach(block => {
+                                    if (block.type === 'text' && block.text) {
+                                        addMessage('Claude', block.text);
+                                    } else if (block.type === 'image') {
+                                        if (block.source && block.source.data) {
+                                            addImage(block.source.data);
+                                        } else if (block.data) {
+                                            addImage(block.data);
+                                        }
+                                    }
+                                });
                             }
                         });
                     }
@@ -607,6 +607,90 @@
 
      sendBtn.onclick = sendMessage;
 
+     // Open search modal
+     searchSessionsBtn.onclick = () => {
+       ensureSearchModal();
+       searchResultsList().innerHTML = '';
+       searchResultsInfo().textContent = '';
+       // Prefill with current message input as a helpful default
+       searchQueryInput().value = (input.value || '').trim();
+       bsModalInstance.show();
+       setTimeout(() => searchQueryInput().focus(), 150);
+     };
+
+     // Search handler via event delegation (works even if button is created later)
+     document.addEventListener('click', (e) => {
+       if (e.target && e.target.id === 'runSearchBtn') {
+         runSessionSearch();
+       }
+     });
+     document.addEventListener('keydown', (e) => {
+       if (sessionsSearchModal && sessionsSearchModal.classList.contains('show')) {
+         if (e.key === 'Enter' && document.activeElement === searchQueryInput()) {
+           e.preventDefault();
+           runSessionSearch();
+         }
+       }
+     });
+
+     async function runSessionSearch() {
+       const q = searchQueryInput().value.trim();
+       if (!q) {
+         searchResultsInfo().textContent = 'Type something to search.';
+         searchResultsList().innerHTML = '';
+         return;
+       }
+       searchResultsInfo().textContent = 'Searching...';
+       searchResultsList().innerHTML = '';
+       try {
+         const params = new URLSearchParams();
+         if (q) params.set('q', q);
+         params.set('limit', '20');
+         const resp = await fetch(`/api/sessions/search?${params.toString()}`);
+         if (!resp.ok) {
+           searchResultsInfo().textContent = `Search failed: ${resp.statusText}`;
+           return;
+         }
+         const data = await resp.json();
+         const results = Array.isArray(data.results) ? data.results : [];
+         if (results.length === 0) {
+           searchResultsInfo().textContent = 'No results.';
+           return;
+         }
+         searchResultsInfo().textContent = `${results.length} result(s)`;
+         results.forEach(item => {
+           const row = document.createElement('button');
+           row.type = 'button';
+           row.className = 'list-group-item list-group-item-action';
+           const dt = new Date(item.created_at).toLocaleString();
+           const title = item.display_name || item.session_id;
+           const snippet = item.snippet ? item.snippet : '';
+           row.innerHTML = `<div class="d-flex w-100 justify-content-between">
+               <h6 class="mb-1">${title}</h6>
+               <small class="text-muted">${dt}</small>
+             </div>
+             <p class="mb-1 text-truncate">${snippet}</p>
+             <small class="text-muted">Session: ${item.session_id}</small>`;
+           row.onclick = () => {
+             // Open the session, load chat, close modal
+             currentSessionId = item.session_id;
+             currentSessionSpan.textContent = `Active: ${title}`;
+             clearMessages();
+             loadSessionHistory(item.session_id);
+             connectWebSocket();
+             // Update active state in list
+             document.querySelectorAll('.session-item').forEach(el => el.classList.remove('active'));
+             // Refresh sessions list soon to reflect active
+             setTimeout(() => listSessions(), 100);
+             if (bsModalInstance) bsModalInstance.hide();
+           };
+           searchResultsList().appendChild(row);
+         });
+       } catch (err) {
+         searchResultsInfo().textContent = `Search failed: ${err.message || err}`;
+       }
+     }
+
     // Load sessions when page loads
     window.addEventListener('load', async () => {
       // Always show VNC and load immediately
@@ -710,6 +794,33 @@
       });
     })();
   </script>
+  
+  <!-- Sessions Search Modal -->
+  <div class="modal fade" id="sessionsSearchModal" tabindex="-1" aria-labelledby="sessionsSearchLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sessionsSearchLabel"><i class="bi bi-search me-2"></i>Search Sessions</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+         <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-sm-8">
+              <input type="text" id="searchQueryInput" class="form-control" placeholder="Search text in messages...">
+            </div>
+            <div class="col-sm-4 d-grid">
+              <button class="btn btn-primary" id="runSearchBtn" type="button"><i class="bi bi-search"></i></button>
+            </div>
+          </div>
+          <div id="searchResultsInfo" class="small text-muted mb-2"></div>
+          <div class="list-group" id="searchResultsList"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <!-- Bootstrap 5 JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

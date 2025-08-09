@@ -7,7 +7,7 @@ from app.core.database import Base
 class Session(Base):
     __tablename__ = "sessions"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(String(255), unique=True, index=True, nullable=False)
+    session_code = Column(String(255), unique=True, index=True, nullable=False)
     display_name = Column(String(255), nullable=True)
     status = Column(String(50), default="running")
     created_at = Column(DateTime, default=datetime.utcnow)

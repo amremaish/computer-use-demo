@@ -38,41 +38,17 @@ class WebSocketAgentHandler:
                     "message": thinking_text
                 }))
         elif block["type"] == "text":
-            # Send to client
+            # Only stream to client; persistence happens after sampling completes
             asyncio.create_task(self.send_message({
                 "type": "agent_message",
                 "message": block["text"]
             }))
-            # Persist assistant text as a message
-            try:
-                self.db_service.add_message(
-                    self.session_id,
-                    "assistant",
-                    [{"type": "text", "text": block["text"]}],
-                )
-            except Exception as e:
-                print(f"[DB] Failed to persist assistant text: {e}")
         elif block["type"] == "image":
             if block.get("source") and block["source"].get("type") == "base64":
                 asyncio.create_task(self.send_message({
                     "type": "image",
                     "data": block["source"]["data"]
                 }))
-                # Persist assistant image as a message
-                try:
-                    self.db_service.add_message(
-                        self.session_id,
-                        "assistant",
-                        [{
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "data": block["source"]["data"],
-                            },
-                        }],
-                    )
-                except Exception as e:
-                    print(f"[DB] Failed to persist assistant image: {e}")
         elif block["type"] == "tool_use":
             print(f"[*] Tool requested: {block.get('name', '')} (id={block.get('id', '')})")
         else:
@@ -132,7 +108,7 @@ class WebSocketAgentHandler:
                                 "message": "Error: ANTHROPIC_API_KEY is not configured. Please set the environment variable."
                             })
                             continue
-                            
+
                         await self.sampling_loop(
                             model=self.MODEL,
                             provider=self.api_provider,
@@ -158,17 +134,21 @@ class WebSocketAgentHandler:
                     if len(self.messages_for_api) > original_count:
                         for i in range(original_count, len(self.messages_for_api)):
                             msg = self.messages_for_api[i]
-                            if msg.get("role") == "user":
-                                # Handle tool results that were added by sampling_loop
-                                content = msg.get("content", [])
+                            role = msg.get("role")
+                            content = msg.get("content", [])
+                            if role == "assistant":
+                                try:
+                                    self.db_service.add_message(self.session_id, "assistant", content)
+                                except Exception as e:
+                                    print(f"[DB] Failed to persist assistant message: {e}")
+                            elif role == "user":
+                                # Handle tool results or extra user blocks that sampling_loop may have appended
                                 if content and isinstance(content, list):
-                                    # Check if this is a tool result message
                                     if len(content) == 1 and content[0].get("type") == "tool_result":
                                         tool_result_content = content[0].get("content", [])
                                         if tool_result_content:
                                             self.db_service.add_message(self.session_id, "user", tool_result_content)
                                     else:
-                                        # Regular user message content
                                         self.db_service.add_message(self.session_id, "user", content)
 
                 except ValueError as e:

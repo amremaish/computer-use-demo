@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime
+from fastapi import Query
+from enum import Enum
 
 from ...core.database import get_db
 from ...services.database_service import DatabaseService
@@ -142,7 +144,7 @@ async def create_session(
     
     # Create session in database
     db_service.create_session(
-        session_id=session_id,
+        session_code=session_id,
         display_name=display_name,
         initial_prompt=request.initial_prompt
     )
@@ -181,6 +183,32 @@ async def get_session(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Session {session_id} not found"
     )
+
+class SessionSearchItem(BaseModel):
+    session_id: str
+    display_name: str
+    created_at: datetime
+    message_id: int
+    message_created_at: datetime
+    snippet: Optional[str] = None
+
+class SessionSearchResponse(BaseModel):
+    results: List[SessionSearchItem]
+
+@router.get("/sessions/search", response_model=SessionSearchResponse)
+async def search_sessions(
+    q: Optional[str] = Query(None, min_length=1, description="Text to search for in messages"),
+    limit: int = Query(20, ge=1, le=100, description="Max results to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for sessions by message content substring (case-insensitive).
+
+    Returns the most recent matching message per session. Optionally filter by message type.
+    """
+    db_service = DatabaseService(db)
+    items = db_service.search_sessions_by_message_text(q, max_results=limit)
+    return SessionSearchResponse(results=[SessionSearchItem(**item) for item in items])
 
 @router.get("/session/{session_id}/history", response_model=SessionHistory)
 async def get_session_history(
