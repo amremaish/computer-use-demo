@@ -160,6 +160,15 @@ The following diagram shows the database schema and relationships between sessio
 
 ## 📚 API Documentation
 
+### Swagger and OpenAPI
+
+- **Swagger UI**: [http://localhost:8081/api/docs](http://localhost:8081/api/docs)
+- **ReDoc**: [http://localhost:8081/api/redoc](http://localhost:8081/api/redoc)
+- **OpenAPI JSON**: [http://localhost:8081/api/openapi.json](http://localhost:8081/api/openapi.json)
+
+Notes:
+- The WebSocket endpoint is described in this README but is not part of the OpenAPI schema.
+
 ## 🔎 Using the Search UI
 
 - Open the app at `http://localhost:8080`.
